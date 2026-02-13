@@ -28,7 +28,7 @@ ext {
     RCLONE_VERSION = project.properties['de.felixnuesse.extract.rCloneVersion']
     GO_REQ_VERSION = project.properties['de.felixnuesse.extract.goVersion']
     RCLONE_MODULE = 'github.com/alimas7/rclone'
-    RCLONE_CUSTOM_VERSION_SUFFIX = '-extract'
+    RCLONE_CUSTOM_VERSION_SUFFIX = ''
 
     PROJECT_DIR = projectDir.absolutePath
     CACHE_PATH = Paths.get(PROJECT_DIR, 'cache').toString()
