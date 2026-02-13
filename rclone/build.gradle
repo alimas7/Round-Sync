@@ -27,7 +27,7 @@ ext {
     NDK_TOOLCHAIN_VERSION = project.properties['de.felixnuesse.extract.ndkToolchainVersion']
     RCLONE_VERSION = project.properties['de.felixnuesse.extract.rCloneVersion']
     GO_REQ_VERSION = project.properties['de.felixnuesse.extract.goVersion']
-    RCLONE_MODULE = 'github.com/alimas7/rclone/terabox'
+    RCLONE_MODULE = 'github.com/alimas7/rclone'
     RCLONE_CUSTOM_VERSION_SUFFIX = '-extract'
 
     PROJECT_DIR = projectDir.absolutePath
@@ -152,6 +152,7 @@ def buildRclone(abi) {
                 abiToEnv[abi].each {entry -> environment entry.key, entry.value}
                 workingDir CACHE_PATH
                 def ldflags = "-buildid= -X github.com/alimas7/rclone/fs.Version=${RCLONE_VERSION}${RCLONE_CUSTOM_VERSION_SUFFIX}"
+                println "Building: $RCLONE_MODULE"
                 commandLine (
                     'go',
                     'build',
