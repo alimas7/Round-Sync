@@ -152,7 +152,10 @@ def buildRclone(abi) {
                 abiToEnv[abi].each {entry -> environment entry.key, entry.value}
                 workingDir CACHE_PATH
                 def ldflags = "-buildid= -X github.com/alimas7/rclone/fs.Version=${RCLONE_VERSION}${RCLONE_CUSTOM_VERSION_SUFFIX}"
-                println "Building: $RCLONE_MODULE"
+                println "=-= RCLONE_MODULE = $RCLONE_MODULE"
+                println "=-= RCLONE_VERSION = $RCLONE_VERSION"
+                println "=-= RCLONE_CUSTOM_VERSION_SUFFIX = $RCLONE_CUSTOM_VERSION_SUFFIX"
+                println "=-= ldflags: $ldflags"
                 commandLine (
                     'go',
                     'build',
