@@ -28,6 +28,45 @@ public class RemoteItem implements Comparable<RemoteItem>, Parcelable {
     // running rclone config (for remotes that can only be configured
     // interactively).
     // Updated to: rclone 1.50.2
+/*=-= 20260213 - Would have required less manual maintenance to just use the list from "rclone help backends"?
+
+Based on slimmed-down github.com/alimas7/rclone@v1.70.0.slim.terabox:
+
+ 1 / Alias for an existing remote
+   \ (alias)
+ 2 / Better checksums for other remotes
+   \ (hasher)
+ 3 / Box
+   \ (box)
+ 4 / Cache a remote
+   \ (cache)
+ 5 / Combine several remotes into one
+   \ (combine)
+ 6 / Compress a remote
+   \ (compress)
+ 7 / Encrypt/Decrypt a remote
+   \ (crypt)
+ 8 / FTP
+   \ (ftp)
+ 9 / HTTP
+   \ (http)
+10 / In memory object storage system.
+   \ (memory)
+11 / Local Disk
+   \ (local)
+12 / SMB / CIFS
+   \ (smb)
+13 / SSH/SFTP
+   \ (sftp)
+14 / Terabox
+   \ (terabox)
+15 / Transparently chunk/split large files
+   \ (chunker)
+16 / Union merges the contents of several upstream fs
+   \ (union)
+17 / WebDAV
+   \ (webdav)
+
     public static final int FICHIER = 1;
     public static final int ALIAS = 2;
     public static final int AMAZON_DRIVE = 3;
@@ -61,6 +100,25 @@ public class RemoteItem implements Comparable<RemoteItem>, Parcelable {
     public static final int YANDEX = 32;
     public static final int HTTP = 33;
     public static final int PREMIUMIZEME = 34;
+*/
+
+    public static final int ALIAS    = 1;
+    public static final int HASHER   = 2;
+    public static final int BOX      = 3;
+    public static final int CACHE    = 4;
+    public static final int COMBINE  = 5;
+    public static final int COMPRESS = 6;
+    public static final int CRYPT    = 7;
+    public static final int FTP      = 8;
+    public static final int HTTP     = 9;
+    public static final int MEMORY   = 10;
+    public static final int LOCAL    = 11;
+    public static final int SMB      = 12;
+    public static final int SFTP     = 13;
+    public static final int TERABOX  = 14;
+    public static final int CHUNKER  = 15;
+    public static final int UNION    = 16;
+    public static final int WEBDAV   = 17;
 
     private String name;
     @Deprecated
@@ -114,10 +172,12 @@ public class RemoteItem implements Comparable<RemoteItem>, Parcelable {
 
     public boolean hasTrashCan() {
         switch (type) {
+/*=-= 20260213
             case GOOGLE_DRIVE:
             case PCLOUD:
             case YANDEX:
                 return true;
+*/
             default:
                 return false;
         }
@@ -125,10 +185,12 @@ public class RemoteItem implements Comparable<RemoteItem>, Parcelable {
 
     public boolean isDirectoryModifiedTimeSupported() {
         switch (type) {
+/*=-= 20260213
             case DROPBOX:
             case B2:
             case GOOGLE_PHOTOS:
                 return false;
+*/
             default:
                 return true;
         }
@@ -136,9 +198,12 @@ public class RemoteItem implements Comparable<RemoteItem>, Parcelable {
 
     public boolean isOAuth() {
         switch (type) {
+/*=-= 20260213
             case PCLOUD:
             case PREMIUMIZEME:
+*/
             case BOX:
+/*=-= 20260213
             case PUTIO:
             case SHAREFILE:
             case ONEDRIVE:
@@ -150,6 +215,7 @@ public class RemoteItem implements Comparable<RemoteItem>, Parcelable {
             case DROPBOX:
             case JOTTACLOUD:
             case MAILRU:
+*/
                 return true;
             default:
                 return false;
@@ -285,12 +351,14 @@ public class RemoteItem implements Comparable<RemoteItem>, Parcelable {
                 return SAFW;
             case "alias":
                 return ALIAS;
+/*=-= 20260213
             case "amazon cloud drive":
                 return AMAZON_DRIVE;
             case "azureblob":
                 return AZUREBLOB;
             case "b2":
                 return B2;
+*/
             case "box":
                 return BOX;
             case "cache":
@@ -299,28 +367,35 @@ public class RemoteItem implements Comparable<RemoteItem>, Parcelable {
                 return CHUNKER;
             case "crypt":
                 return CRYPT;
+/*=-= 20260213
             case "dropbox":
                 return DROPBOX;
             case "drive":
                 return GOOGLE_DRIVE;
             case "fichier":
                 return FICHIER;
+*/
             case "ftp":
                 return FTP;
+/*=-= 20260213
             case "google cloud storage":
                 return GOOGLE_CLOUD_STORAGE;
             case "google photos":
                 return GOOGLE_PHOTOS;
+*/
             case "http":
                 return HTTP;
+/*=-= 20260213
             case "swift":
                 return SWIFT;
             case "jottacloud":
                 return JOTTACLOUD;
             case "koofr":
                 return KOOFR;
+*/
             case "local":
                 return LOCAL;
+/*=-= 20260213
             case "mega":
                 return MEGA;
             case "onedrive":
@@ -333,12 +408,14 @@ public class RemoteItem implements Comparable<RemoteItem>, Parcelable {
                 return QINGSTOR;
             case "s3":
                 return S3;
+*/
             case "sftp":
                 return SFTP;
             case "union":
                 return UNION;
             case "webdav":
                 return WEBDAV;
+/*=-= 20260213
             case "yandex":
                 return YANDEX;
             case "sharefile":
@@ -349,6 +426,21 @@ public class RemoteItem implements Comparable<RemoteItem>, Parcelable {
                 return PUTIO;
             case "premiumizeme":
                 return PREMIUMIZEME;
+*/
+
+            case "hasher":
+                return HASHER;
+            case "combine":
+                return COMBINE;
+            case "compress":
+                return COMPRESS;
+            case "memory":
+                return MEMORY;
+            case "smb":
+                return SMB;
+            case "terabox":
+                return TERABOX;
+
             default:
                 return -1;
         }
@@ -365,6 +457,7 @@ public class RemoteItem implements Comparable<RemoteItem>, Parcelable {
             switch (type) {
                 case RemoteItem.SAFW:
                     return R.drawable.ic_tablet_cellphone;
+/*=-= 20260213
                 case RemoteItem.AMAZON_DRIVE:
                     return R.drawable.ic_amazon;
                 case RemoteItem.AZUREBLOB:
@@ -389,20 +482,25 @@ public class RemoteItem implements Comparable<RemoteItem>, Parcelable {
                     return R.drawable.ic_open_drive;
                 case RemoteItem.S3:
                     return R.drawable.ic_amazon;
+*/
                 case RemoteItem.BOX:
                     return R.drawable.ic_box;
                 case RemoteItem.SFTP:
                     return R.drawable.ic_terminal;
                 case RemoteItem.LOCAL:
                     return R.drawable.ic_tablet_cellphone;
+/*=-= 20260213
                 case RemoteItem.PCLOUD:
                     return R.drawable.ic_pcloud;
+*/
                 case RemoteItem.UNION:
                     return R.drawable.ic_union_24dp;
                 case RemoteItem.WEBDAV:
                     return R.drawable.ic_webdav;
+/*=-= 20260213
                 case RemoteItem.YANDEX:
                     return R.drawable.ic_yandex_mono;
+*/
                 default:
                     return R.drawable.ic_cloud;
             }

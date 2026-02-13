@@ -211,6 +211,7 @@ public class AppShortcutsHelper {
             return R.mipmap.ic_shortcut_lock;
         }
         switch (remoteType) {
+/*=-= 20260213 Based on slimmed-down github.com/alimas7/rclone@v1.70.0.slim.terabox:
             case RemoteItem.AMAZON_DRIVE:
                 return R.mipmap.ic_shortcut_amazon;
             case RemoteItem.GOOGLE_DRIVE:
@@ -223,6 +224,7 @@ public class AppShortcutsHelper {
                 return R.mipmap.ic_shortcut_onedrive;
             case RemoteItem.S3:
                 return R.mipmap.ic_shortcut_amazon;
+*/
             case RemoteItem.BOX:
                 return R.mipmap.ic_shortcut_box;
             case RemoteItem.SFTP:
