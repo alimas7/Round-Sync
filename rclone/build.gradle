@@ -141,8 +141,61 @@ def buildRclone(abi) {
         'x86_64': ['GOARCH': 'amd64'],
     ]
 
+    // return {
+    //     doLast {
+    //         exec {
+    //             environment 'GOPATH', GOPATH
+    //             def crossCompiler = getCrossCompiler(abi)
+    //             environment 'CC', crossCompiler
+    //             environment 'CC_FOR_TARGET', crossCompiler
+    //             environment 'GOOS', 'android'
+    //             environment 'CGO_ENABLED', '1'
+    //             environment 'CGO_LDFLAGS', '-fuse-ld=lld -Wl,--hash-style=both -s'
+    //             abiToEnv[abi].each {entry -> environment entry.key, entry.value}
+    //             workingDir CACHE_PATH
+    //             def ldflags = "-buildid= -X github.com/rclone/rclone/fs.Version=${RCLONE_VERSION}${RCLONE_CUSTOM_VERSION_SUFFIX}"
+    //             println "=-= RCLONE_MODULE = $RCLONE_MODULE"
+    //             println "=-= RCLONE_VERSION = $RCLONE_VERSION"
+    //             println "=-= RCLONE_CUSTOM_VERSION_SUFFIX = $RCLONE_CUSTOM_VERSION_SUFFIX"
+    //             println "=-= ldflags: $ldflags"
+    //             // commandLine (
+    //             //     'go',
+    //             //     'build',
+    //             //     '-tags',
+    //             //     'android noselfupdate',
+    //             //     '-trimpath',
+    //             //     '-ldflags',
+    //             //     ldflags,
+    //             //     '-o',
+    //             //     getOutputPath(abi),
+    //             //     RCLONE_MODULE
+    //             // )
+    //             def dot = '.'
+    //             def slash = '/'
+    //             def finalModule = 'github' + dot + 'com' + slash + 'rclone' + slash + 'rclone'
+
+    //             commandLine (
+    //                 'go', 'build',
+    //                 '-tags', 'android noselfupdate',
+    //                 '-trimpath',
+    //                 '-ldflags', ldflags,
+    //                 '-o', getOutputPath(abi),
+    //                 finalModule
+    //             )
+    //         }
+    //     }
+    // }
+
     return {
         doLast {
+            // STEP A: Fix the checksums right before building
+            exec {
+                environment 'GOPATH', GOPATH
+                workingDir CACHE_PATH
+                commandLine 'go', 'mod', 'tidy'
+            }
+
+            // STEP B: The actual build
             exec {
                 environment 'GOPATH', GOPATH
                 def crossCompiler = getCrossCompiler(abi)
@@ -153,34 +206,22 @@ def buildRclone(abi) {
                 environment 'CGO_LDFLAGS', '-fuse-ld=lld -Wl,--hash-style=both -s'
                 abiToEnv[abi].each {entry -> environment entry.key, entry.value}
                 workingDir CACHE_PATH
-                def ldflags = "-buildid= -X github.com/rclone/rclone/fs.Version=${RCLONE_VERSION}${RCLONE_CUSTOM_VERSION_SUFFIX}"
-                println "=-= RCLONE_MODULE = $RCLONE_MODULE"
-                println "=-= RCLONE_VERSION = $RCLONE_VERSION"
-                println "=-= RCLONE_CUSTOM_VERSION_SUFFIX = $RCLONE_CUSTOM_VERSION_SUFFIX"
-                println "=-= ldflags: $ldflags"
-                // commandLine (
-                //     'go',
-                //     'build',
-                //     '-tags',
-                //     'android noselfupdate',
-                //     '-trimpath',
-                //     '-ldflags',
-                //     ldflags,
-                //     '-o',
-                //     getOutputPath(abi),
-                //     RCLONE_MODULE
-                // )
-                def dot = '.'
-                def slash = '/'
-                def finalModule = 'github' + dot + 'com' + slash + 'rclone' + slash + 'rclone'
-
+                
+                def d = '.'; def s = '/'
+                def official = 'github' + d + 'com' + s + 'rclone' + s + 'rclone'
+                def ldflags = "-buildid= -X ${official}/fs.Version=${RCLONE_VERSION}${RCLONE_CUSTOM_VERSION_SUFFIX}"
+                
                 commandLine (
-                    'go', 'build',
-                    '-tags', 'android noselfupdate',
+                    'go',
+                    'build',
+                    '-tags',
+                    'android noselfupdate',
                     '-trimpath',
-                    '-ldflags', ldflags,
-                    '-o', getOutputPath(abi),
-                    finalModule
+                    '-ldflags',
+                    ldflags,
+                    '-o',
+                    getOutputPath(abi),
+                    official
                 )
             }
         }
@@ -245,9 +286,9 @@ task checkoutRclone(type: Exec, dependsOn: createRcloneModule) {
     // This decodes: go get -v -d ://github.com
     // We use the "official" name because the "replace" above redirects it.
     ///commandLine 'sh', '-c', 'go get -v -d github.com/rclone/rclone@backend-terabox'
-    def dot = '.'
-    def slash = '/'
-    def target = 'github' + dot + 'com' + slash + 'rclone' + slash + 'rclone'
+    // def dot = '.'
+    // def slash = '/'
+    // def target = 'github' + dot + 'com' + slash + 'rclone' + slash + 'rclone'
     
     // This looks like it's downloading the official one, 
     // but the 'replace' above forces it to download your branch!
@@ -259,7 +300,11 @@ task checkoutRclone(type: Exec, dependsOn: createRcloneModule) {
     // 1. Get the code
     // 2. Run tidy, but tell it to ignore the vendor-like subdirectories
     // 3. The '-e' flag allows it to proceed even if it hits those weird versioned path warnings
-    commandLine 'sh', '-c', "go get -v -d ${target} && go mod tidy -e"
+    // commandLine 'sh', '-c', "go get -v -d ${target} && go mod tidy -e"
+
+    def d = '.'; def s = '/'
+    def target = 'github' + d + 'com' + s + 'rclone' + s + 'rclone@backend-terabox'
+    commandLine 'go', 'get', '-v', '-d', "${target}"
 }
 
 task buildArm(dependsOn: checkoutRclone) {
