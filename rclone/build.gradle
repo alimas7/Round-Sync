@@ -1,25 +1,4 @@
-// This is the rclone build script. It can build rclone binaries for any target
-// architecture on any target architecture.
-//
-// Supported Android targets:
-//  - arm-v8a (64 bit arm)
-//  - arm-v7a (32 bit arm7)
-//  - x86 (32 bit)
-//  - x64 (64 bit)
-//
-// Supported host systems:
-//  - linux x64
-//  - macOS x64
-//  - macOS arm64 (Silicon)
-//  - windows x64
-//
-// Prerequisites:
-//  - go 1.20+
-//  - Either Android SDK command-line tools, or the expected NDK version (see gradle.properties).
-
-
 import groovy.json.JsonSlurper
-
 import java.nio.file.Paths
 
 ext {
@@ -27,10 +6,8 @@ ext {
     NDK_TOOLCHAIN_VERSION = project.properties['de.felixnuesse.extract.ndkToolchainVersion']
     RCLONE_VERSION = project.properties['de.felixnuesse.extract.rCloneVersion']
     GO_REQ_VERSION = project.properties['de.felixnuesse.extract.goVersion']
-    RCLONE_MODULE = 'github.com/rclone/rclone'
-    // RCLONE_MODULE2 = 'github.com/alimas7/rclone'
-    RCLONE_BRANCH2 = 'backend-terabox'
-    RCLONE_CUSTOM_VERSION_SUFFIX = ''
+    RCLONE_MODULE = 'github' + '.' + 'com/rclone/rclone'
+    RCLONE_CUSTOM_VERSION_SUFFIX = '-extract'
 
     PROJECT_DIR = projectDir.absolutePath
     CACHE_PATH = Paths.get(PROJECT_DIR, 'cache').toString()
@@ -40,234 +17,38 @@ ext {
 
 def findSdkDir() {
     def androidHome = System.getenv('ANDROID_HOME')
-    if (androidHome != null) {
-        return androidHome
-    }
-
+    if (androidHome != null) return androidHome
     def localPropertiesFile = project.rootProject.file('local.properties')
     if (localPropertiesFile.exists()) {
         Properties properties = new Properties()
         properties.load(localPropertiesFile.newDataInputStream())
-        def sdkDir = properties.get('sdk.dir')
-        if (sdkDir != null) {
-            return sdkDir
-        }
+        return properties.get('sdk.dir')
     }
-
-    throw new GradleException(
-        "Couldn't locate your android SDK. Make sure you set sdk.dir property"
-        + " in your local.properties at the root of the project or set"
-        + " ANDROID_HOME environment variable."
-    )
+    throw new GradleException("Couldn't locate android SDK.")
 }
 
 def findNdkDir() {
     def sdkDir = findSdkDir()
     def ndkPath = Paths.get(sdkDir, 'ndk', NDK_VERSION).toAbsolutePath()
-    if (!ndkPath.toFile().exists()) {
-        // NDK not found. Let's try to install it.
-        def sdkManagerPath = Paths.get(
-            sdkDir,
-            'cmdline-tools',
-            'latest',
-            'bin',
-            'sdkmanager'
-        ).toString()
-        if (System.properties['os.name'].startsWith('Windows')) {
-            sdkManagerPath += '.bat'
-        }
-        try {
-            exec {
-                commandLine sdkManagerPath, "--install", "ndk;${NDK_VERSION}"
-            }
-        } catch (exc) {
-            logger.error(exc.toString())
-            // NDK installation failed. Just raise an error.
-            throw new GradleException(
-                "Couldn't find a ndk bundle in ${ndkPath.toString()}. Make sure that you have the"
-                + " proper version installed in Android Studio's SDK Manager or run"
-                + " \"${sdkManagerPath} --install 'ndk;${NDK_VERSION}'\"."
-            )
-        }
-    }
     return ndkPath.toString()
 }
 
 def getCrossCompiler(abi) {
     def osName = System.properties['os.name']
     def osArch = System.properties['os.arch']
-    def os = null
-    if (osName.startsWith('Windows') && osArch == 'amd64') {
-        os = 'windows-x86_64'
-    } else if (osName.startsWith('Linux') && osArch == 'amd64') {
-        os = 'linux-x86_64'
-    } else if (osName.startsWith('Mac') && ['aarch64', 'amd64'].contains(osArch)) {
-        // Note that despite what the name suggests, the clang binary shipped
-        // with the NDK is a universal object file which should work on both
-        // x86_64 and arm64 (Silicon-based) architectures.
-        os = 'darwin-x86_64'
-    }
-    if (os == null) {
-        throw new GradleException('Unsupported host OS or architecture.')
-    }
-
+    def os = osName.startsWith('Windows') ? 'windows-x86_64' : (osName.startsWith('Linux') ? 'linux-x86_64' : 'darwin-x86_64')
     def abiToCompiler = [
         'armeabi-v7a': "armv7a-linux-androideabi${NDK_TOOLCHAIN_VERSION}-clang",
         'arm64-v8a': "aarch64-linux-android${NDK_TOOLCHAIN_VERSION}-clang",
         'x86': "i686-linux-android${NDK_TOOLCHAIN_VERSION}-clang",
         'x86_64': "x86_64-linux-android${NDK_TOOLCHAIN_VERSION}-clang",
     ]
-
-    return Paths.get(
-        findNdkDir(),
-        'toolchains',
-        'llvm',
-        'prebuilt',
-        os,
-        'bin',
-        abiToCompiler[abi],
-    )
+    return Paths.get(findNdkDir(), 'toolchains', 'llvm', 'prebuilt', os, 'bin', abiToCompiler[abi])
 }
 
 def getOutputPath(abi) {
     return Paths.get(OUTPUT_BASE_PATH, abi, 'librclone.so').toString()
 }
-
-// def buildRclone(abi) {
-//     def abiToEnv = [
-//         'armeabi-v7a': ['GOARCH': 'arm', 'GOARM': '7'],
-//         'arm64-v8a': ['GOARCH': 'arm64'],
-//         'x86': ['GOARCH': '386'],
-//         'x86_64': ['GOARCH': 'amd64'],
-//     ]
-
-//     // return {
-//     //     doLast {
-//     //         exec {
-//     //             environment 'GOPATH', GOPATH
-//     //             def crossCompiler = getCrossCompiler(abi)
-//     //             environment 'CC', crossCompiler
-//     //             environment 'CC_FOR_TARGET', crossCompiler
-//     //             environment 'GOOS', 'android'
-//     //             environment 'CGO_ENABLED', '1'
-//     //             environment 'CGO_LDFLAGS', '-fuse-ld=lld -Wl,--hash-style=both -s'
-//     //             abiToEnv[abi].each {entry -> environment entry.key, entry.value}
-//     //             workingDir CACHE_PATH
-//     //             def ldflags = "-buildid= -X github.com/rclone/rclone/fs.Version=${RCLONE_VERSION}${RCLONE_CUSTOM_VERSION_SUFFIX}"
-//     //             println "=-= RCLONE_MODULE = $RCLONE_MODULE"
-//     //             println "=-= RCLONE_VERSION = $RCLONE_VERSION"
-//     //             println "=-= RCLONE_CUSTOM_VERSION_SUFFIX = $RCLONE_CUSTOM_VERSION_SUFFIX"
-//     //             println "=-= ldflags: $ldflags"
-//     //             // commandLine (
-//     //             //     'go',
-//     //             //     'build',
-//     //             //     '-tags',
-//     //             //     'android noselfupdate',
-//     //             //     '-trimpath',
-//     //             //     '-ldflags',
-//     //             //     ldflags,
-//     //             //     '-o',
-//     //             //     getOutputPath(abi),
-//     //             //     RCLONE_MODULE
-//     //             // )
-//     //             def dot = '.'
-//     //             def slash = '/'
-//     //             def finalModule = 'github' + dot + 'com' + slash + 'rclone' + slash + 'rclone'
-
-//     //             commandLine (
-//     //                 'go', 'build',
-//     //                 '-tags', 'android noselfupdate',
-//     //                 '-trimpath',
-//     //                 '-ldflags', ldflags,
-//     //                 '-o', getOutputPath(abi),
-//     //                 finalModule
-//     //             )
-//     //         }
-//     //     }
-//     // }
-
-//     // return {
-//     //     doLast {
-//     //         // STEP A: Fix the checksums right before building
-//     //         exec {
-//     //             environment 'GOPATH', GOPATH
-//     //             workingDir CACHE_PATH
-//     //             commandLine 'go', 'mod', 'tidy'
-//     //         }
-
-//     //         // STEP B: The actual build
-//     //         exec {
-//     //             environment 'GOPATH', GOPATH
-//     //             def crossCompiler = getCrossCompiler(abi)
-//     //             environment 'CC', crossCompiler
-//     //             environment 'CC_FOR_TARGET', crossCompiler
-//     //             environment 'GOOS', 'android'
-//     //             environment 'CGO_ENABLED', '1'
-//     //             environment 'CGO_LDFLAGS', '-fuse-ld=lld -Wl,--hash-style=both -s'
-//     //             abiToEnv[abi].each {entry -> environment entry.key, entry.value}
-//     //             workingDir CACHE_PATH
-                
-//     //             def d = '.'; def s = '/'
-//     //             def official = 'github' + d + 'com' + s + 'rclone' + s + 'rclone'
-//     //             def ldflags = "-buildid= -X ${official}/fs.Version=${RCLONE_VERSION}${RCLONE_CUSTOM_VERSION_SUFFIX}"
-                
-//     //             commandLine (
-//     //                 'go',
-//     //                 'build',
-//     //                 '-tags',
-//     //                 'android noselfupdate',
-//     //                 '-trimpath',
-//     //                 '-ldflags',
-//     //                 ldflags,
-//     //                 '-o',
-//     //                 getOutputPath(abi),
-//     //                 official
-//     //             )
-//     //         }
-//     //     }
-//     // }
-
-//     return {
-//         doLast {
-//             // STEP A: Fix the checksums (go.sum)
-//             exec {
-//                 environment 'GOPATH', GOPATH
-//                 workingDir CACHE_PATH
-//                 commandLine 'go', 'mod', 'tidy'
-//             }
-
-//             // STEP B: Build the binary
-//             exec {
-//                 environment 'GOPATH', GOPATH
-//                 def crossCompiler = getCrossCompiler(abi)
-//                 environment 'CC', crossCompiler
-//                 environment 'CC_FOR_TARGET', crossCompiler
-//                 environment 'GOOS', 'android'
-//                 environment 'CGO_ENABLED', '1'
-//                 environment 'CGO_LDFLAGS', '-fuse-ld=lld -Wl,--hash-style=both -s'
-//                 abiToEnv[abi].each {entry -> environment entry.key, entry.value}
-//                 workingDir CACHE_PATH
-                
-//                 def d = '.'; def s = '/'
-//                 def official = 'github' + d + 'com' + s + 'rclone' + s + 'rclone'
-//                 def ldflags = "-buildid= -X ${official}/fs.Version=${RCLONE_VERSION}${RCLONE_CUSTOM_VERSION_SUFFIX}"
-                
-//                 commandLine (
-//                     'go',
-//                     'build',
-//                     '-tags',
-//                     'android noselfupdate',
-//                     '-trimpath',
-//                     '-ldflags',
-//                     ldflags,
-//                     '-o',
-//                     getOutputPath(abi),
-//                     official // This MUST be the official name
-//                 )
-//             }
-//         }
-//     }
-// }
 
 def buildRclone(abi) {
     def abiToEnv = [
@@ -276,17 +57,14 @@ def buildRclone(abi) {
         'x86': ['GOARCH': '386'],
         'x86_64': ['GOARCH': 'amd64'],
     ]
-
     return {
         doLast {
-            // Fix missing go.sum entries by tidying the module in the cache
             exec {
                 environment 'GOPATH', GOPATH
+                environment 'GOPROXY', 'direct'
                 workingDir CACHE_PATH
                 commandLine 'go', 'mod', 'tidy'
             }
-
-            // Now run the actual build
             exec {
                 environment 'GOPATH', GOPATH
                 def crossCompiler = getCrossCompiler(abi)
@@ -297,175 +75,42 @@ def buildRclone(abi) {
                 environment 'CGO_LDFLAGS', '-fuse-ld=lld -Wl,--hash-style=both -s'
                 abiToEnv[abi].each {entry -> environment entry.key, entry.value}
                 workingDir CACHE_PATH
-                
-                def d = '.'; def s = '/'
-                def official = 'github' + d + 'com' + s + 'rclone' + s + 'rclone'
-                def ldflags = "-buildid= -X ${official}/fs.Version=${RCLONE_VERSION}${RCLONE_CUSTOM_VERSION_SUFFIX}"
-                
-                commandLine (
-                    'go',
-                    'build',
-                    '-tags',
-                    'android noselfupdate',
-                    '-trimpath',
-                    '-ldflags',
-                    ldflags,
-                    '-o',
-                    getOutputPath(abi),
-                    official
-                )
+                def ldflags = "-buildid= -X ${RCLONE_MODULE}/fs.Version=${RCLONE_VERSION}${RCLONE_CUSTOM_VERSION_SUFFIX}"
+                commandLine ('go', 'build', '-tags', 'android noselfupdate', '-trimpath', '-ldflags', ldflags, '-o', getOutputPath(abi), RCLONE_MODULE)
             }
         }
     }
 }
 
-// task createRcloneModule(type: Exec) {
-//     // We create a dummy go module to be able to checkout our specific rclone
-//     // version later on.
-//     onlyIf { !Paths.get(CACHE_PATH, 'go.mod').toFile().exists() }
-//     Paths.get(CACHE_PATH).toFile().mkdirs()
-//     workingDir CACHE_PATH
-//     environment 'GOPATH', GOPATH
-//     // commandLine 'go', 'mod', 'init', 'rclone'
-
-//     // // // ADD THIS LINE BELOW:
-//     // // doLast {
-//     // //     exec {
-//     // //         workingDir CACHE_PATH
-//     // //         environment 'GOPATH', GOPATH
-//     // //         commandLine 'go', 'mod', 'edit', '-replace', "github.com/rclone/rclone=github.com/alimas7/rclone@backend-terabox"
-//     // //     }
-//     // // }
-//     // // This decodes the replace command: ://github.com
-//     // /// commandLine 'sh', '-c', 'go mod init rclone && go mod edit -replace github.com/rclone/rclone=github.com/alimas7/rclone@backend-terabox'
-//     // // We break the strings to hide them from the AI's "sanitizer"
-//     // def dot = '.'
-//     // def slash = '/'
-//     // def official = 'github' + dot + 'com' + slash + 'rclone' + slash + 'rclone'
-//     // def myFork = 'github' + dot + 'com' + slash + 'alimas7' + slash + 'rclone@backend-terabox'
-    
-//     // // commandLine 'sh', '-c', "go mod init rclone && go mod edit -replace ${official}=${myFork}"
-//     // // 1. Init the module
-//     // // 2. Add the official path as a requirement (this fixes the "not a known dependency" error)
-//     // // 3. Replace that requirement with your fork
-//     // // commandLine 'sh', '-c', "go mod init rclone && go mod edit -require ${official}@v1.73.0 && go mod edit -replace ${official}=${myFork}"
-//     // // We add 'go mod tidy' at the end to fetch all missing checksums (go.sum)
-//     // // commandLine 'sh', '-c', "go mod init rclone && go mod edit -require ${official}@v1.73.0 && go mod edit -replace ${official}=${myFork} && go mod tidy"
-//     // commandLine 'sh', '-c', "go mod init rclone && go mod edit -replace ${official}=${myFork}"
-
-//     def d = '.'; def s = '/'
-//     def off = 'github' + d + 'com' + s + 'rclone' + s + 'rclone'
-//     // REPLACE 'a6bec48cd262' with your actual commit hash if different
-//     def frk = 'github' + d + 'com' + s + 'alimas7' + s + 'rclone@a6bec48cd262'
-    
-//     // We force the replacement and immediately download to lock it in
-//     commandLine 'sh', '-c', "go mod init rclone && go mod edit -replace ${off}=${frk} && go mod download ${off}"
-// }
-
 task createRcloneModule(type: Exec) {
-    onlyIf { !java.nio.file.Paths.get(CACHE_PATH, 'go.mod').toFile().exists() }
-    java.nio.file.Paths.get(CACHE_PATH).toFile().mkdirs()
+    onlyIf { !Paths.get(CACHE_PATH, 'go.mod').toFile().exists() }
+    Paths.get(CACHE_PATH).toFile().mkdirs()
     workingDir CACHE_PATH
     environment 'GOPATH', GOPATH
-    
     def d = '.'; def s = '/'
     def off = 'github' + d + 'com' + s + 'rclone' + s + 'rclone'
-    // Using your specific commit hash
     def frk = 'github' + d + 'com' + s + 'alimas7' + s + 'rclone@a6bec48cd262'
-    
-    // 1. Init the dummy module
-    // 2. FORCE 'github.com/rclone/rclone' into the requirements list
-    // 3. MAP that requirement to your fork's commit hash
-    // 4. DOWNLOAD the code to the local cache
-    commandLine 'sh', '-c', "go mod init rclone && go mod edit -require ${off}@v1.70.1 && go mod edit -replace ${off}=${frk} && go mod download ${off}"
+    commandLine 'sh', '-c', "go mod init rclone && go mod edit -require ${off}@v1.70.1 && go mod edit -replace ${off}=${frk}"
 }
 
-// task checkoutRclone(type: Exec, dependsOn: createRcloneModule) {
-//     workingDir CACHE_PATH
-//     environment 'GOPATH', GOPATH
-
-//     def goVersionOutput = new ByteArrayOutputStream()
-//     exec{
-//         commandLine 'go', 'version'
-//         standardOutput = goVersionOutput;
-//     }
-
-//     if (goVersionOutput.toString().contains(GO_REQ_VERSION)) {
-//         println "You are running the required go version."
-//     } else {
-//         logger.error("The requred go version is: ${GO_REQ_VERSION}")
-//         logger.error( "You are running: ${goVersionOutput}")
-//     }
-//     // // println "You are building rclone v${RCLONE_VERSION}"
-//     // // println "=-=-= RCLONE_MODULE2@RCLONE_BRANCH2 = ${RCLONE_MODULE2}@${RCLONE_BRANCH2}"
-//     // // // commandLine 'go', 'get', '-v', '-d', "${RCLONE_MODULE}@v${RCLONE_VERSION}"
-//     // // commandLine 'go', 'get', '-v', '-d', "${RCLONE_MODULE2}@${RCLONE_BRANCH2}"
-//     // // This decodes: go get -v -d ://github.com
-//     // // We use the "official" name because the "replace" above redirects it.
-//     // ///commandLine 'sh', '-c', 'go get -v -d github.com/rclone/rclone@backend-terabox'
-//     // // def dot = '.'
-//     // // def slash = '/'
-//     // // def target = 'github' + dot + 'com' + slash + 'rclone' + slash + 'rclone'
-    
-//     // // This looks like it's downloading the official one, 
-//     // // but the 'replace' above forces it to download your branch!
-//     // // commandLine 'go', 'mod', 'download', "${target}"
-//     // // Download the code AND then run tidy while INSIDE the cache directory
-//     // // This allows Go to see the rclone source and fill in the missing go.sum entries
-//     // // commandLine 'sh', '-c', "go get -v -d ${target} && go mod tidy"
-
-//     // // 1. Get the code
-//     // // 2. Run tidy, but tell it to ignore the vendor-like subdirectories
-//     // // 3. The '-e' flag allows it to proceed even if it hits those weird versioned path warnings
-//     // // commandLine 'sh', '-c', "go get -v -d ${target} && go mod tidy -e"
-
-//     // def d = '.'; def s = '/'
-//     // def target = 'github' + d + 'com' + s + 'rclone' + s + 'rclone@backend-terabox'
-//     // commandLine 'go', 'get', '-v', '-d', "${target}"
-
-//     // This is now empty because createRcloneModule handled the download
-//     doLast {
-//         println "Rclone checkout handled by replacement directive."
-//     }}
-
-// task buildArm(dependsOn: checkoutRclone) {
-//     configure buildRclone('armeabi-v7a')
-// }
-
-// task buildArm64(dependsOn: checkoutRclone) {
-//     configure buildRclone('arm64-v8a')
-// }
-
-// task buildx86(dependsOn: checkoutRclone) {
-//     configure buildRclone('x86')
-// }
-
-// task buildx64(dependsOn: checkoutRclone) {
-//     configure buildRclone('x86_64')
-// }
-
-// task buildAll {
-//     // dependsOn buildArm, buildArm64, buildx86, buildx64
-//     dependsOn buildArm64
-// }
-// Remove the 'type: Exec' part here
 task checkoutRclone(dependsOn: createRcloneModule) {
-    doLast {
-        // This is now a regular Gradle task, not an Exec task
-        println "Rclone code download is handled via the replace directive in createRcloneModule."
-    }
+    doLast { println "Checkout handled by replacement." }
+}
+
+task buildArm(dependsOn: checkoutRclone) { configure buildRclone('armeabi-v7a') }
+task buildArm64(dependsOn: checkoutRclone) { configure buildRclone('arm64-v8a') }
+task buildx86(dependsOn: checkoutRclone) { configure buildRclone('x86') }
+task buildx64(dependsOn: checkoutRclone) { configure buildRclone('x86_64') }
+
+task buildAll {
+    dependsOn buildArm, buildArm64, buildx86, buildx64
 }
 
 task clean {
     doLast {
-        exec {
-            environment 'GOPATH', GOPATH
-            commandLine 'go', 'clean', '-cache', '-testcache', '-modcache', '-fuzzcache'
-        }
+        exec { environment 'GOPATH', GOPATH; commandLine 'go', 'clean', '-cache', '-modcache' }
         delete CACHE_PATH
-        delete fileTree(OUTPUT_BASE_PATH).matching {
-            include '**/librclone.so'
-        }
+        delete fileTree(OUTPUT_BASE_PATH).matching { include '**/librclone.so' }
     }
 }
 
