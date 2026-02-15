@@ -28,7 +28,9 @@ ext {
     RCLONE_VERSION = project.properties['de.felixnuesse.extract.rCloneVersion']
     GO_REQ_VERSION = project.properties['de.felixnuesse.extract.goVersion']
     RCLONE_MODULE = 'github.com/rclone/rclone'
-    RCLONE_CUSTOM_VERSION_SUFFIX = '-extract'
+    RCLONE_MODULE2 = 'github.com/alimas7/rclone'
+    RCLONE_BRANCH2 = 'backend-terabox'
+    RCLONE_CUSTOM_VERSION_SUFFIX = ''
 
     PROJECT_DIR = projectDir.absolutePath
     CACHE_PATH = Paths.get(PROJECT_DIR, 'cache').toString()
@@ -152,6 +154,10 @@ def buildRclone(abi) {
                 abiToEnv[abi].each {entry -> environment entry.key, entry.value}
                 workingDir CACHE_PATH
                 def ldflags = "-buildid= -X github.com/rclone/rclone/fs.Version=${RCLONE_VERSION}${RCLONE_CUSTOM_VERSION_SUFFIX}"
+                println "=-= RCLONE_MODULE = $RCLONE_MODULE"
+                println "=-= RCLONE_VERSION = $RCLONE_VERSION"
+                println "=-= RCLONE_CUSTOM_VERSION_SUFFIX = $RCLONE_CUSTOM_VERSION_SUFFIX"
+                println "=-= ldflags: $ldflags"
                 commandLine (
                     'go',
                     'build',
@@ -228,7 +234,8 @@ task buildx64(dependsOn: checkoutRclone) {
 }
 
 task buildAll {
-    dependsOn buildArm, buildArm64, buildx86, buildx64
+    // dependsOn buildArm, buildArm64, buildx86, buildx64
+    dependsOn buildArm64
 }
 
 task clean {

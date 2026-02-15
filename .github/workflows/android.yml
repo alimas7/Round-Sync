@@ -19,6 +19,10 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
         cache: gradle
+    - name: Clean & Build
+      run: |
+        chmod +x gradlew
+        ./gradlew clea
     - name: Set up Go from gradle.properties
       uses: actions/setup-go@v4
       with:

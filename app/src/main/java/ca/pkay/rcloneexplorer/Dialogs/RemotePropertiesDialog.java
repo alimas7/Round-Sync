@@ -229,12 +229,14 @@ public class RemotePropertiesDialog extends DialogFragment {
                         .addFollowing(new InitOauthStep(context))
                         .addFollowing(new OauthFinishStep());
 
+/*=-= 20260213 Based on slimmed-down github.com/alimas7/rclone@v1.70.0.slim.terabox:
                 if (RemoteItem.ONEDRIVE == remoteItem.getType()) {
                     // OneDrive needs active drive selection
                     postOauth.addFollowing("OneDrive Personal or Business", "onedrive")
                             .addFollowing("Chose drive to use:> ", "0")
                             .addFollowing("y/n> ", "y");
                 }
+*/
 
                 ErrorHandler errorHandler = e -> {
                     FLog.e(TAG, "onError: The recipe for %s is probably bad", e, remoteItem.getTypeReadable());
