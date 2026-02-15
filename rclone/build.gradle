@@ -216,7 +216,9 @@ task createRcloneModule(type: Exec) {
     // 1. Init the module
     // 2. Add the official path as a requirement (this fixes the "not a known dependency" error)
     // 3. Replace that requirement with your fork
-    commandLine 'sh', '-c', "go mod init rclone && go mod edit -require ${official}@v1.73.0 && go mod edit -replace ${official}=${myFork}"
+    // commandLine 'sh', '-c', "go mod init rclone && go mod edit -require ${official}@v1.73.0 && go mod edit -replace ${official}=${myFork}"
+    // We add 'go mod tidy' at the end to fetch all missing checksums (go.sum)
+    commandLine 'sh', '-c', "go mod init rclone && go mod edit -require ${official}@v1.73.0 && go mod edit -replace ${official}=${myFork} && go mod tidy"
 
 }
 
