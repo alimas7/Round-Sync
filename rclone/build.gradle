@@ -380,73 +380,80 @@ task createRcloneModule(type: Exec) {
     commandLine 'sh', '-c', "go mod init rclone && go mod edit -require ${off}@v1.70.1 && go mod edit -replace ${off}=${frk} && go mod download ${off}"
 }
 
-task checkoutRclone(type: Exec, dependsOn: createRcloneModule) {
-    workingDir CACHE_PATH
-    environment 'GOPATH', GOPATH
+// task checkoutRclone(type: Exec, dependsOn: createRcloneModule) {
+//     workingDir CACHE_PATH
+//     environment 'GOPATH', GOPATH
 
-    def goVersionOutput = new ByteArrayOutputStream()
-    exec{
-        commandLine 'go', 'version'
-        standardOutput = goVersionOutput;
-    }
+//     def goVersionOutput = new ByteArrayOutputStream()
+//     exec{
+//         commandLine 'go', 'version'
+//         standardOutput = goVersionOutput;
+//     }
 
-    if (goVersionOutput.toString().contains(GO_REQ_VERSION)) {
-        println "You are running the required go version."
-    } else {
-        logger.error("The requred go version is: ${GO_REQ_VERSION}")
-        logger.error( "You are running: ${goVersionOutput}")
-    }
-    // // println "You are building rclone v${RCLONE_VERSION}"
-    // // println "=-=-= RCLONE_MODULE2@RCLONE_BRANCH2 = ${RCLONE_MODULE2}@${RCLONE_BRANCH2}"
-    // // // commandLine 'go', 'get', '-v', '-d', "${RCLONE_MODULE}@v${RCLONE_VERSION}"
-    // // commandLine 'go', 'get', '-v', '-d', "${RCLONE_MODULE2}@${RCLONE_BRANCH2}"
-    // // This decodes: go get -v -d ://github.com
-    // // We use the "official" name because the "replace" above redirects it.
-    // ///commandLine 'sh', '-c', 'go get -v -d github.com/rclone/rclone@backend-terabox'
-    // // def dot = '.'
-    // // def slash = '/'
-    // // def target = 'github' + dot + 'com' + slash + 'rclone' + slash + 'rclone'
+//     if (goVersionOutput.toString().contains(GO_REQ_VERSION)) {
+//         println "You are running the required go version."
+//     } else {
+//         logger.error("The requred go version is: ${GO_REQ_VERSION}")
+//         logger.error( "You are running: ${goVersionOutput}")
+//     }
+//     // // println "You are building rclone v${RCLONE_VERSION}"
+//     // // println "=-=-= RCLONE_MODULE2@RCLONE_BRANCH2 = ${RCLONE_MODULE2}@${RCLONE_BRANCH2}"
+//     // // // commandLine 'go', 'get', '-v', '-d', "${RCLONE_MODULE}@v${RCLONE_VERSION}"
+//     // // commandLine 'go', 'get', '-v', '-d', "${RCLONE_MODULE2}@${RCLONE_BRANCH2}"
+//     // // This decodes: go get -v -d ://github.com
+//     // // We use the "official" name because the "replace" above redirects it.
+//     // ///commandLine 'sh', '-c', 'go get -v -d github.com/rclone/rclone@backend-terabox'
+//     // // def dot = '.'
+//     // // def slash = '/'
+//     // // def target = 'github' + dot + 'com' + slash + 'rclone' + slash + 'rclone'
     
-    // // This looks like it's downloading the official one, 
-    // // but the 'replace' above forces it to download your branch!
-    // // commandLine 'go', 'mod', 'download', "${target}"
-    // // Download the code AND then run tidy while INSIDE the cache directory
-    // // This allows Go to see the rclone source and fill in the missing go.sum entries
-    // // commandLine 'sh', '-c', "go get -v -d ${target} && go mod tidy"
+//     // // This looks like it's downloading the official one, 
+//     // // but the 'replace' above forces it to download your branch!
+//     // // commandLine 'go', 'mod', 'download', "${target}"
+//     // // Download the code AND then run tidy while INSIDE the cache directory
+//     // // This allows Go to see the rclone source and fill in the missing go.sum entries
+//     // // commandLine 'sh', '-c', "go get -v -d ${target} && go mod tidy"
 
-    // // 1. Get the code
-    // // 2. Run tidy, but tell it to ignore the vendor-like subdirectories
-    // // 3. The '-e' flag allows it to proceed even if it hits those weird versioned path warnings
-    // // commandLine 'sh', '-c', "go get -v -d ${target} && go mod tidy -e"
+//     // // 1. Get the code
+//     // // 2. Run tidy, but tell it to ignore the vendor-like subdirectories
+//     // // 3. The '-e' flag allows it to proceed even if it hits those weird versioned path warnings
+//     // // commandLine 'sh', '-c', "go get -v -d ${target} && go mod tidy -e"
 
-    // def d = '.'; def s = '/'
-    // def target = 'github' + d + 'com' + s + 'rclone' + s + 'rclone@backend-terabox'
-    // commandLine 'go', 'get', '-v', '-d', "${target}"
+//     // def d = '.'; def s = '/'
+//     // def target = 'github' + d + 'com' + s + 'rclone' + s + 'rclone@backend-terabox'
+//     // commandLine 'go', 'get', '-v', '-d', "${target}"
 
-    // This is now empty because createRcloneModule handled the download
+//     // This is now empty because createRcloneModule handled the download
+//     doLast {
+//         println "Rclone checkout handled by replacement directive."
+//     }}
+
+// task buildArm(dependsOn: checkoutRclone) {
+//     configure buildRclone('armeabi-v7a')
+// }
+
+// task buildArm64(dependsOn: checkoutRclone) {
+//     configure buildRclone('arm64-v8a')
+// }
+
+// task buildx86(dependsOn: checkoutRclone) {
+//     configure buildRclone('x86')
+// }
+
+// task buildx64(dependsOn: checkoutRclone) {
+//     configure buildRclone('x86_64')
+// }
+
+// task buildAll {
+//     // dependsOn buildArm, buildArm64, buildx86, buildx64
+//     dependsOn buildArm64
+// }
+// Remove the 'type: Exec' part here
+task checkoutRclone(dependsOn: createRcloneModule) {
     doLast {
-        println "Rclone checkout handled by replacement directive."
-    }}
-
-task buildArm(dependsOn: checkoutRclone) {
-    configure buildRclone('armeabi-v7a')
-}
-
-task buildArm64(dependsOn: checkoutRclone) {
-    configure buildRclone('arm64-v8a')
-}
-
-task buildx86(dependsOn: checkoutRclone) {
-    configure buildRclone('x86')
-}
-
-task buildx64(dependsOn: checkoutRclone) {
-    configure buildRclone('x86_64')
-}
-
-task buildAll {
-    // dependsOn buildArm, buildArm64, buildx86, buildx64
-    dependsOn buildArm64
+        // This is now a regular Gradle task, not an Exec task
+        println "Rclone code download is handled via the replace directive in createRcloneModule."
+    }
 }
 
 task clean {
