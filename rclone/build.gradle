@@ -59,12 +59,20 @@ def buildRclone(abi) {
     ]
     return {
         doLast {
+            // STEP A: Fix checksums by pointing tidy to the module path
             exec {
                 environment 'GOPATH', GOPATH
                 environment 'GOPROXY', 'direct'
                 workingDir CACHE_PATH
-                commandLine 'go', 'mod', 'tidy'
+                
+                def d = '.'; def s = '/'
+                def official = 'github' + d + 'com' + s + 'rclone' + s + 'rclone'
+                
+                // We add the module name here so tidy scans the downloaded source
+                commandLine 'go', 'mod', 'tidy', official
             }
+
+            // STEP B: Build the binary
             exec {
                 environment 'GOPATH', GOPATH
                 def crossCompiler = getCrossCompiler(abi)
@@ -75,8 +83,12 @@ def buildRclone(abi) {
                 environment 'CGO_LDFLAGS', '-fuse-ld=lld -Wl,--hash-style=both -s'
                 abiToEnv[abi].each {entry -> environment entry.key, entry.value}
                 workingDir CACHE_PATH
-                def ldflags = "-buildid= -X ${RCLONE_MODULE}/fs.Version=${RCLONE_VERSION}${RCLONE_CUSTOM_VERSION_SUFFIX}"
-                commandLine ('go', 'build', '-tags', 'android noselfupdate', '-trimpath', '-ldflags', ldflags, '-o', getOutputPath(abi), RCLONE_MODULE)
+                
+                def d = '.'; def s = '/'
+                def official = 'github' + d + 'com' + s + 'rclone' + s + 'rclone'
+                def ldflags = "-buildid= -X ${official}/fs.Version=${RCLONE_VERSION}${RCLONE_CUSTOM_VERSION_SUFFIX}"
+                
+                commandLine ('go', 'build', '-tags', 'android noselfupdate', '-trimpath', '-ldflags', ldflags, '-o', getOutputPath(abi), official)
             }
         }
     }
