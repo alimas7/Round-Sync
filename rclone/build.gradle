@@ -254,7 +254,12 @@ task checkoutRclone(type: Exec, dependsOn: createRcloneModule) {
     // commandLine 'go', 'mod', 'download', "${target}"
     // Download the code AND then run tidy while INSIDE the cache directory
     // This allows Go to see the rclone source and fill in the missing go.sum entries
-    commandLine 'sh', '-c', "go get -v -d ${target} && go mod tidy"
+    // commandLine 'sh', '-c', "go get -v -d ${target} && go mod tidy"
+
+    // 1. Get the code
+    // 2. Run tidy, but tell it to ignore the vendor-like subdirectories
+    // 3. The '-e' flag allows it to proceed even if it hits those weird versioned path warnings
+    commandLine 'sh', '-c', "go get -v -d ${target} && go mod tidy -e"
 }
 
 task buildArm(dependsOn: checkoutRclone) {
