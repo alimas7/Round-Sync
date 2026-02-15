@@ -183,6 +183,15 @@ task createRcloneModule(type: Exec) {
     workingDir CACHE_PATH
     environment 'GOPATH', GOPATH
     commandLine 'go', 'mod', 'init', 'rclone'
+
+    // ADD THIS LINE BELOW:
+    doLast {
+        exec {
+            workingDir CACHE_PATH
+            environment 'GOPATH', GOPATH
+            commandLine 'go', 'mod', 'edit', '-replace', "://github.com"
+        }
+    }
 }
 
 task checkoutRclone(type: Exec, dependsOn: createRcloneModule) {
