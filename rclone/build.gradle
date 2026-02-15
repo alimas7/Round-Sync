@@ -371,7 +371,7 @@ task createRcloneModule(type: Exec) {
     def d = '.'; def s = '/'
     def off = 'github' + d + 'com' + s + 'rclone' + s + 'rclone'
     // Using your specific commit hash
-    def frk = 'github' + d + 'com' + s + 'MEMEME' + s + 'rclone@a6bec48cd262'
+    def frk = 'github' + d + 'com' + s + 'alimas7' + s + 'rclone@a6bec48cd262'
     
     // 1. Init the dummy module
     // 2. FORCE 'github.com/rclone/rclone' into the requirements list
