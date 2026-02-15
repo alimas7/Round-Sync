@@ -28,7 +28,7 @@ ext {
     RCLONE_VERSION = project.properties['de.felixnuesse.extract.rCloneVersion']
     GO_REQ_VERSION = project.properties['de.felixnuesse.extract.goVersion']
     RCLONE_MODULE = 'github.com/rclone/rclone'
-    RCLONE_MODULE2 = 'github.com/almas7/rclone'
+    RCLONE_MODULE2 = 'github.com/alimas7/rclone'
     RCLONE_BRANCH2 = 'backend-terabox'
     RCLONE_CUSTOM_VERSION_SUFFIX = ''
 
