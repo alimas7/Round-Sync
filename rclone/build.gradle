@@ -189,7 +189,7 @@ task createRcloneModule(type: Exec) {
         exec {
             workingDir CACHE_PATH
             environment 'GOPATH', GOPATH
-            commandLine 'go', 'mod', 'edit', '-replace', "://github.com"
+            commandLine 'go', 'mod', 'edit', '-replace', "github.com/rclone/rclone=github.com/alimas7/rclone@backend-terabox"
         }
     }
 }
