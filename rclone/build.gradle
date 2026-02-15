@@ -28,7 +28,7 @@ ext {
     RCLONE_VERSION = project.properties['de.felixnuesse.extract.rCloneVersion']
     GO_REQ_VERSION = project.properties['de.felixnuesse.extract.goVersion']
     RCLONE_MODULE = 'github.com/rclone/rclone'
-    RCLONE_MODULE2 = 'github.com/alimas7/rclone'
+    // RCLONE_MODULE2 = 'github.com/alimas7/rclone'
     RCLONE_BRANCH2 = 'backend-terabox'
     RCLONE_CUSTOM_VERSION_SUFFIX = ''
 
@@ -182,16 +182,18 @@ task createRcloneModule(type: Exec) {
     Paths.get(CACHE_PATH).toFile().mkdirs()
     workingDir CACHE_PATH
     environment 'GOPATH', GOPATH
-    commandLine 'go', 'mod', 'init', 'rclone'
+    // commandLine 'go', 'mod', 'init', 'rclone'
 
-    // ADD THIS LINE BELOW:
-    doLast {
-        exec {
-            workingDir CACHE_PATH
-            environment 'GOPATH', GOPATH
-            commandLine 'go', 'mod', 'edit', '-replace', "github.com/rclone/rclone=github.com/alimas7/rclone@backend-terabox"
-        }
-    }
+    // // ADD THIS LINE BELOW:
+    // doLast {
+    //     exec {
+    //         workingDir CACHE_PATH
+    //         environment 'GOPATH', GOPATH
+    //         commandLine 'go', 'mod', 'edit', '-replace', "github.com/rclone/rclone=github.com/alimas7/rclone@backend-terabox"
+    //     }
+    // }
+    // This decodes the replace command: ://github.com
+    commandLine 'sh', '-c', 'go mod init rclone && go mod edit -replace github.com/rclone/rclone=github.com/alimas7/rclone@backend-terabox'
 }
 
 task checkoutRclone(type: Exec, dependsOn: createRcloneModule) {
@@ -210,10 +212,13 @@ task checkoutRclone(type: Exec, dependsOn: createRcloneModule) {
         logger.error("The requred go version is: ${GO_REQ_VERSION}")
         logger.error( "You are running: ${goVersionOutput}")
     }
-    println "You are building rclone v${RCLONE_VERSION}"
-    println "=-=-= RCLONE_MODULE2@RCLONE_BRANCH2 = ${RCLONE_MODULE2}@${RCLONE_BRANCH2}"
-    // commandLine 'go', 'get', '-v', '-d', "${RCLONE_MODULE}@v${RCLONE_VERSION}"
-    commandLine 'go', 'get', '-v', '-d', "${RCLONE_MODULE2}@${RCLONE_BRANCH2}"
+    // println "You are building rclone v${RCLONE_VERSION}"
+    // println "=-=-= RCLONE_MODULE2@RCLONE_BRANCH2 = ${RCLONE_MODULE2}@${RCLONE_BRANCH2}"
+    // // commandLine 'go', 'get', '-v', '-d', "${RCLONE_MODULE}@v${RCLONE_VERSION}"
+    // commandLine 'go', 'get', '-v', '-d', "${RCLONE_MODULE2}@${RCLONE_BRANCH2}"
+    // This decodes: go get -v -d ://github.com
+    // We use the "official" name because the "replace" above redirects it.
+    commandLine 'sh', '-c', 'go get -v -d github.com/rclone/rclone@backend-terabox'
 }
 
 task buildArm(dependsOn: checkoutRclone) {
