@@ -62,21 +62,11 @@ def buildRclone(abi) {
             def d = '.'; def s = '/'
             def off = 'github' + d + 'com' + s + 'rclone' + s + 'rclone'
             
-            // The directory where Go actually extracts the source code
-            // Based on your logs: ://github.com
-            def srcDir = Paths.get(GOPATH, 'pkg', 'mod', 'github' + d + 'com', 'alimas7', 'rclone@v1.70.1-0.20260214074835-a6bec48cd262').toString()
-
-            // STEP A: Run tidy from INSIDE the source directory
             exec {
                 environment 'GOPATH', GOPATH
                 environment 'GOPROXY', 'direct'
-                workingDir srcDir 
-                commandLine 'go', 'mod', 'tidy'
-            }
-
-            // STEP B: Build the binary from the CACHE_PATH
-            exec {
-                environment 'GOPATH', GOPATH
+                environment 'GOSUMDB', 'off' // Disable checksum DB to avoid mismatch with fork
+                
                 def crossCompiler = getCrossCompiler(abi)
                 environment 'CC', crossCompiler
                 environment 'CC_FOR_TARGET', crossCompiler
@@ -84,10 +74,24 @@ def buildRclone(abi) {
                 environment 'CGO_ENABLED', '1'
                 environment 'CGO_LDFLAGS', '-fuse-ld=lld -Wl,--hash-style=both -s'
                 abiToEnv[abi].each {entry -> environment entry.key, entry.value}
+                
                 workingDir CACHE_PATH
                 
                 def ldflags = "-buildid= -X ${off}/fs.Version=${RCLONE_VERSION}${RCLONE_CUSTOM_VERSION_SUFFIX}"
-                commandLine ('go', 'build', '-tags', 'android noselfupdate', '-trimpath', '-ldflags', ldflags, '-o', getOutputPath(abi), off)
+                
+                commandLine (
+                    'go',
+                    'build',
+                    '-mod=mod', // THIS IS THE KEY: it fetches missing sums automatically
+                    '-tags',
+                    'android noselfupdate',
+                    '-trimpath',
+                    '-ldflags',
+                    ldflags,
+                    '-o',
+                    getOutputPath(abi),
+                    off
+                )
             }
         }
     }
