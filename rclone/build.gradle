@@ -202,7 +202,7 @@ task checkoutRclone(type: Exec, dependsOn: createRcloneModule) {
         logger.error( "You are running: ${goVersionOutput}")
     }
     println "You are building rclone v${RCLONE_VERSION}"
-    println "=-=-= RCLONE_MODULE2@RCLONE_BRANCH2 = ${RCLONE_MODULE}@${RCLONE_BRANCH2}"
+    println "=-=-= RCLONE_MODULE2@RCLONE_BRANCH2 = ${RCLONE_MODULE2}@${RCLONE_BRANCH2}"
     // commandLine 'go', 'get', '-v', '-d', "${RCLONE_MODULE}@v${RCLONE_VERSION}"
     commandLine 'go', 'get', '-v', '-d', "${RCLONE_MODULE2}@${RCLONE_BRANCH2}"
 }
