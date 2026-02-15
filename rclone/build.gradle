@@ -59,20 +59,22 @@ def buildRclone(abi) {
     ]
     return {
         doLast {
-            // STEP A: Fix checksums by pointing tidy to the module path
+            def d = '.'; def s = '/'
+            def off = 'github' + d + 'com' + s + 'rclone' + s + 'rclone'
+            
+            // The directory where Go actually extracts the source code
+            // Based on your logs: ://github.com
+            def srcDir = Paths.get(GOPATH, 'pkg', 'mod', 'github' + d + 'com', 'MEMEME', 'rclone@v1.70.1-0.20260214074835-a6bec48cd262').toString()
+
+            // STEP A: Run tidy from INSIDE the source directory
             exec {
                 environment 'GOPATH', GOPATH
                 environment 'GOPROXY', 'direct'
-                workingDir CACHE_PATH
-                
-                def d = '.'; def s = '/'
-                def official = 'github' + d + 'com' + s + 'rclone' + s + 'rclone'
-                
-                // We add the module name here so tidy scans the downloaded source
-                commandLine 'go', 'mod', 'tidy', official
+                workingDir srcDir 
+                commandLine 'go', 'mod', 'tidy'
             }
 
-            // STEP B: Build the binary
+            // STEP B: Build the binary from the CACHE_PATH
             exec {
                 environment 'GOPATH', GOPATH
                 def crossCompiler = getCrossCompiler(abi)
@@ -84,11 +86,8 @@ def buildRclone(abi) {
                 abiToEnv[abi].each {entry -> environment entry.key, entry.value}
                 workingDir CACHE_PATH
                 
-                def d = '.'; def s = '/'
-                def official = 'github' + d + 'com' + s + 'rclone' + s + 'rclone'
-                def ldflags = "-buildid= -X ${official}/fs.Version=${RCLONE_VERSION}${RCLONE_CUSTOM_VERSION_SUFFIX}"
-                
-                commandLine ('go', 'build', '-tags', 'android noselfupdate', '-trimpath', '-ldflags', ldflags, '-o', getOutputPath(abi), official)
+                def ldflags = "-buildid= -X ${off}/fs.Version=${RCLONE_VERSION}${RCLONE_CUSTOM_VERSION_SUFFIX}"
+                commandLine ('go', 'build', '-tags', 'android noselfupdate', '-trimpath', '-ldflags', ldflags, '-o', getOutputPath(abi), off)
             }
         }
     }
