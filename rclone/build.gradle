@@ -64,7 +64,7 @@ def buildRclone(abi) {
             
             // The directory where Go actually extracts the source code
             // Based on your logs: ://github.com
-            def srcDir = Paths.get(GOPATH, 'pkg', 'mod', 'github' + d + 'com', 'MEMEME', 'rclone@v1.70.1-0.20260214074835-a6bec48cd262').toString()
+            def srcDir = Paths.get(GOPATH, 'pkg', 'mod', 'github' + d + 'com', 'alimas7', 'rclone@v1.70.1-0.20260214074835-a6bec48cd262').toString()
 
             // STEP A: Run tidy from INSIDE the source directory
             exec {
