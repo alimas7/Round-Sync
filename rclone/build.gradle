@@ -177,6 +177,15 @@ task createRcloneModule(type: Exec) {
     workingDir CACHE_PATH
     environment 'GOPATH', GOPATH
     commandLine 'go', 'mod', 'init', 'rclone'
+
+    // ADD THIS LINE BELOW:
+    doLast {
+        exec {
+            workingDir CACHE_PATH
+            environment 'GOPATH', GOPATH
+            commandLine 'go', 'mod', 'edit', '-replace', "://github.com"
+        }
+    }
 }
 
 task checkoutRclone(type: Exec, dependsOn: createRcloneModule) {
@@ -197,7 +206,9 @@ task checkoutRclone(type: Exec, dependsOn: createRcloneModule) {
     }
     println "You are building rclone v${RCLONE_VERSION}"
 
-    commandLine 'go', 'get', '-v', '-d', "${RCLONE_MODULE}@v${RCLONE_VERSION}"
+    // commandLine 'go', 'get', '-v', '-d', "${RCLONE_MODULE}@v${RCLONE_VERSION}"
+    // Change this line inside the checkoutRclone commandLine:
+    commandLine 'go', 'get', '-v', '-d', "://github.com" 
 }
 
 task buildArm(dependsOn: checkoutRclone) {
