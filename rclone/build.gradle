@@ -218,8 +218,8 @@ task createRcloneModule(type: Exec) {
     // 3. Replace that requirement with your fork
     // commandLine 'sh', '-c', "go mod init rclone && go mod edit -require ${official}@v1.73.0 && go mod edit -replace ${official}=${myFork}"
     // We add 'go mod tidy' at the end to fetch all missing checksums (go.sum)
-    commandLine 'sh', '-c', "go mod init rclone && go mod edit -require ${official}@v1.73.0 && go mod edit -replace ${official}=${myFork} && go mod tidy"
-
+    // commandLine 'sh', '-c', "go mod init rclone && go mod edit -require ${official}@v1.73.0 && go mod edit -replace ${official}=${myFork} && go mod tidy"
+    commandLine 'sh', '-c', "go mod init rclone && go mod edit -replace ${official}=${myFork}"
 }
 
 task checkoutRclone(type: Exec, dependsOn: createRcloneModule) {
@@ -251,7 +251,10 @@ task checkoutRclone(type: Exec, dependsOn: createRcloneModule) {
     
     // This looks like it's downloading the official one, 
     // but the 'replace' above forces it to download your branch!
-    commandLine 'go', 'mod', 'download', "${target}"
+    // commandLine 'go', 'mod', 'download', "${target}"
+    // Download the code AND then run tidy while INSIDE the cache directory
+    // This allows Go to see the rclone source and fill in the missing go.sum entries
+    commandLine 'sh', '-c', "go get -v -d ${target} && go mod tidy"
 }
 
 task buildArm(dependsOn: checkoutRclone) {
