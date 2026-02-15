@@ -1,4 +1,4 @@
-module github.com/YOUR_USERNAME/Round-Sync
+module github.com/alimas7/Round-Sync
 
 go 1.24
 
